@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+
+  #  The Application
+  app:
+    container_name: yathaarth_app
+    build:
+      context: ./
+      dockerfile: development/app.dockerfile
+    volumes:
+      - .:/var/www/
+    env_file: '.env'
+    environment:
+      - "DB_HOST=database"
+
+  # The Web Server
+  web:
+    container_name: yathaarth_server
+    build:
+      context: ./
+      dockerfile: development/web.dockerfile
+    volumes:
+      - .:/var/www/
+    ports:
+      - 80:80
+
+  # The Database
+  database:
+    container_name: yathaarth_database
+    image: postgres:11.7
+    volumes:
+      - dbdata:/var/lib/pgsql
+    environment:
+      - "POSTGRES_PASSWORD=123456"
+      - "POSTGRES_USER=yathaarth"
+      - "POSTGRES_DB=yathaarth"
+    ports:
+      - 5432:5432
+
+volumes:
+  dbdata:
