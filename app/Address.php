@@ -15,4 +15,12 @@ class Address extends Model
     public function addressable() {
         return $this->morphTo();
     }
+
+    public function state() {
+        return $this->hasOne(State::class, 'id', 'state_id');
+    }
+
+    public function district() {
+        return $this->hasOne(District::class, 'id', 'district_id');
+    }
 }

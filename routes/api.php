@@ -23,6 +23,8 @@ Route::get('/login', function () {
 
 Route::group(['middleware' => 'auth:airlock'], function() {
     Route::get('/user', 'UserController@show');
+    Route::get('/home', 'UserController@home
+    ');
 
     Route::get('/establishments', 'EstablishmentController@index');
     Route::post('/establishments', 'EstablishmentController@store');

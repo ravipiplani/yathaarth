@@ -36,4 +36,8 @@ class User extends Authenticatable
     public function isAssignee($establishment) {
         return $establishment->assigned_to === $this->id;
     }
+
+    public function beats() {
+        return $this->hasMany(Beat::class, 'assigned_to');
+    }
 }

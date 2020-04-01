@@ -14,11 +14,15 @@ class EstablishmentController extends Controller
 {
     public function index (Request $request) {
         $user = $request->user();
-        $establishments = $user->establishments()->active()->registered()->get();
-        $http_code = count($establishments) ? ApiCode::OK : ApiCode::DATA_NOT_FOUND;
+        $establishments = $user->establishments()->active()->registered();
+        if ($request->has('type')) {
+            $establishments = $establishments->ofType($request->get('type'));
+        }
+        $establishments = $establishments->get();
         return response()->json([
-            'data' => $establishments
-        ], $http_code);
+            'data' => $establishments->load('type:id,name,color', 'status:id,name', 'assignee:id,name,mobile,email')->map
+                    ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'type', 'status', 'assignee'])
+        ]);
     }
 
     public function store (Request $request) {
@@ -85,7 +89,8 @@ class EstablishmentController extends Controller
             throw new UnauthorizedException('Not authorized.');
         }
         return response()->json([
-            'data' => $establishment->load('address')
+            'data' => $establishment->load('type:id,name,color', 'status:id,name', 'assignee:id,name,mobile,email', 'address:id,addressable_type,addressable_id,address_line_1,address_line_2,landmark,city,pincode,lat,long,state_id,district_id', 'address.state:id,name', 'address.district:id,name')
+                ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'type', 'status', 'assignee', 'address'])
         ]);
     }
 
@@ -96,7 +101,7 @@ class EstablishmentController extends Controller
         }
         $establishment->delete();
         return response()->json([
-            'data' => 'Establishment deleted.'
+            'message' => 'Establishment deleted.'
         ]);
     }
 
@@ -107,7 +112,7 @@ class EstablishmentController extends Controller
         }
         $establishment->disable();
         return response()->json([
-            'data' => 'Establishment disabled.'
+            'message' => 'Establishment disabled.'
         ]);
     }
 
@@ -118,7 +123,7 @@ class EstablishmentController extends Controller
         }
         $establishment->enable();
         return response()->json([
-            'data' => 'Establishment enabled.'
+            'message' => 'Establishment enabled.'
         ]);
     }
 
@@ -153,6 +158,6 @@ class EstablishmentController extends Controller
 
         return response()->json([
             'message' => 'Establishment updated successfully.'
-        ], ApiCode::CREATED);
+        ]);
     }
 }
