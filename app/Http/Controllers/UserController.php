@@ -50,23 +50,17 @@ class UserController extends Controller
 
     public function home(Request $request) {
         $user = $request->user();
-        $establishment_types = EstablishmentType::get();
-        $response = ['data' => []];
-        foreach ($establishment_types as $establishment_type) {
-            $response['data'][] = [
-                'id' => $establishment_type->id,
-                'label' => $establishment_type->name,
-                'color' => $establishment_type->color,
-                'count' => $user->establishments()->ofType($establishment_type->name)->active()->registered()->count()
-            ];
-        }
-        $response['data'][] = [
-            'id' => 'beat',
-            'label' => 'BEATS',
-            'color' => '0xFF8CDCDA',
-            'count' =>  $user->beats()->count()
+        $stats = [
+            'beats' => $user->beats()->count(),
+            'customers' => $user->establishments()->active()->registered()->count(),
+            'orders' => 0
         ];
-        return response()->json($response);
+        return response()->json([
+            'data' => [
+                'stats' => $stats,
+                'user' => $user->only('name', 'mobile', 'email')
+            ]
+        ]);
     }
 
     public function show(Request $request) {

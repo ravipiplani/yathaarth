@@ -23,8 +23,7 @@ Route::get('/login', function () {
 
 Route::group(['middleware' => 'auth:airlock'], function() {
     Route::get('/user', 'UserController@show');
-    Route::get('/home', 'UserController@home
-    ');
+    Route::get('/home', 'UserController@home');
 
     Route::get('/establishments', 'EstablishmentController@index');
     Route::post('/establishments', 'EstablishmentController@store');
@@ -33,6 +32,9 @@ Route::group(['middleware' => 'auth:airlock'], function() {
     Route::get('/establishments/{establishment}/disable', 'EstablishmentController@disable');
     Route::get('/establishments/{establishment}/enable', 'EstablishmentController@enable');
     Route::patch('/establishments/{establishment}', 'EstablishmentController@update');
+
+    Route::get('/products', 'ProductController@index');
+    Route::get('/products/{product}', 'ProductController@show');
 });
 
 Route::fallback(function() {

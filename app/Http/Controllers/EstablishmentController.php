@@ -7,12 +7,14 @@ use App\District;
 use App\Establishment;
 use Carbon\Carbon;
 use Exception;
+use Google\Cloud\Core\Exception\BadRequestException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\UnauthorizedException;
 
 class EstablishmentController extends Controller
 {
-    public function index (Request $request) {
+    public function index(Request $request)
+    {
         $user = $request->user();
         $establishments = $user->establishments()->active()->registered();
         if ($request->has('type')) {
@@ -20,12 +22,13 @@ class EstablishmentController extends Controller
         }
         $establishments = $establishments->get();
         return response()->json([
-            'data' => $establishments->load('type:id,name,color', 'status:id,name', 'assignee:id,name,mobile,email')->map
-                    ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'type', 'status', 'assignee'])
+            'data' => $establishments->load('type:id,name', 'status:id,name', 'assignee:id,name,mobile,email')->map
+                ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'type', 'status', 'assignee'])
         ]);
     }
 
-    public function store (Request $request) {
+    public function store(Request $request)
+    {
         $request->validate([
             'establishment_type_id' => 'required',
             'name' => 'required',
@@ -41,16 +44,22 @@ class EstablishmentController extends Controller
 
         $user = $request->user();
 
-        $establishment = Establishment::create([
-            'establishment_type_id' => $request->input('establishment_type_id'),
-            'name' => $request->input('name'),
-            'mobile' => $request->input('mobile'),
-            'is_active' => true,
-            'is_registered' => true,
-            'registration_date' => Carbon::now(),
-            'created_by' => $user->id,
-            'updated_by' => $user->id
-        ]);
+        try {
+            $establishment = Establishment::create([
+                'establishment_type_id' => $request->input('establishment_type_id'),
+                'name' => $request->input('name'),
+                'mobile' => $request->input('mobile'),
+                'is_active' => true,
+                'is_registered' => true,
+                'registration_date' => Carbon::now(),
+                'created_by' => $user->id,
+                'updated_by' => $user->id
+            ]);
+        } catch (Exception $e) {
+            if ($e->getCode() == '23505') {
+                throw new BadRequestException('Mobile/email already exists.');
+            }
+        }
 
         $establishment->updateStatus('REGISTERED');
 
@@ -59,8 +68,7 @@ class EstablishmentController extends Controller
         $district_id = null;
         if ($district) {
             $district_id = $district->id;
-        }
-        else {
+        } else {
             $data = [
                 'district' => $request->input('address.district')
             ];
@@ -83,18 +91,20 @@ class EstablishmentController extends Controller
         ], ApiCode::CREATED);
     }
 
-    public function show (Request $request, Establishment $establishment) {
+    public function show(Request $request, Establishment $establishment)
+    {
         $user = $request->user();
         if (!$user->isAssignee($establishment)) {
             throw new UnauthorizedException('Not authorized.');
         }
         return response()->json([
-            'data' => $establishment->load('type:id,name,color', 'status:id,name', 'assignee:id,name,mobile,email', 'address:id,addressable_type,addressable_id,address_line_1,address_line_2,landmark,city,pincode,lat,long,state_id,district_id', 'address.state:id,name', 'address.district:id,name')
-                ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'type', 'status', 'assignee', 'address'])
+            'data' => $establishment->load('type:id,name', 'status:id,name', 'assignee:id,name,mobile,email', 'address:id,addressable_type,addressable_id,address_line_1,address_line_2,landmark,city,pincode,lat,long,data,state_id,district_id', 'address.state:id,name', 'address.district:id,name')
+                ->only(['id', 'name', 'contact_name', 'mobile', 'gst', 'pan', 'remarks', 'registration_date', 'parent_establishment_id', 'type', 'status', 'assignee', 'address'])
         ]);
     }
 
-    public function delete (Request $request, Establishment $establishment) {
+    public function delete(Request $request, Establishment $establishment)
+    {
         $user = $request->user();
         if (!$user->isAssignee($establishment)) {
             throw new UnauthorizedException('Not authorized.');
@@ -105,7 +115,8 @@ class EstablishmentController extends Controller
         ]);
     }
 
-    public function disable (Request $request, Establishment $establishment) {
+    public function disable(Request $request, Establishment $establishment)
+    {
         $user = $request->user();
         if (!$user->isAssignee($establishment)) {
             throw new UnauthorizedException('Not authorized.');
@@ -116,7 +127,8 @@ class EstablishmentController extends Controller
         ]);
     }
 
-    public function enable (Request $request, Establishment $establishment) {
+    public function enable(Request $request, Establishment $establishment)
+    {
         $user = $request->user();
         if (!$user->isAssignee($establishment)) {
             throw new UnauthorizedException('Not authorized.');
@@ -127,7 +139,8 @@ class EstablishmentController extends Controller
         ]);
     }
 
-    public function update (Request $request, Establishment $establishment) {
+    public function update(Request $request, Establishment $establishment)
+    {
         $user = $request->user();
 
         if (!$user->isAssignee($establishment)) {
@@ -143,8 +156,7 @@ class EstablishmentController extends Controller
             $district = District::where('name', $request->input('address.district'))->first();
             if ($district) {
                 $district_id = $district->id;
-            }
-            else {
+            } else {
                 $data = [
                     'district' => $request->input('address.district')
                 ];

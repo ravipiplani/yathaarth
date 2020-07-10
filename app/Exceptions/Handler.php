@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use App\ApiCode;
+use Google\Cloud\Core\Exception\BadRequestException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\UnauthorizedException;
@@ -56,14 +57,26 @@ class Handler extends ExceptionHandler
     {
         if ($exception instanceof ModelNotFoundException) {
             return response()->json([
-                'data' => $exception->getMessage()
+                'errors' => [
+                    $exception->getMessage()
+                ]
             ], ApiCode::DATA_NOT_FOUND);
         }
 
         if ($exception instanceof UnauthorizedException) {
             return response()->json([
-                'data' => $exception->getMessage()
+                'errors' => [
+                    $exception->getMessage()
+                ]
             ], ApiCode::UNAUTHORIZED);
+        }
+
+        if ($exception instanceof BadRequestException) {
+            return response()->json([
+                'errors' => [
+                    $exception->getMessage()
+                ]
+            ], ApiCode::BAD_REQUEST);
         }
 
         return parent::render($request, $exception);
